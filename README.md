@@ -1,2 +1,2 @@
-# safety
-The aim of the project is to create a workflow for NSFW detection and categorization
+# DocLayOut
+The aim of the project is to create complete ops of the model training and deployment pipeline
