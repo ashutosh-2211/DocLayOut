@@ -1,0 +1,65 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: doclayout-ray
+  namespace: default
+spec:
+  rayVersion: '2.51.1'
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: '0.0.0.0'
+      num-cpus: '0'
+    template:
+      spec:
+        containers:
+          - name: ray-head
+            image: rayproject/ray:2.51.1-py311
+            resources:
+              limits:
+                cpu: "4"
+                memory: "8Gi"
+              requests:
+                cpu: "2"
+                memory: "4Gi"
+            ports:
+              - containerPort: 6379
+                name: gcs-server
+              - containerPort: 8265
+                name: dashboard
+              - containerPort: 10001
+                name: client
+        nodeSelector:
+          role: cpu
+  workerGroupSpecs:
+    - replicas: 2
+      minReplicas: 1
+      maxReplicas: 3
+      groupName: gpu-workers
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+            - name: ray-worker
+              image: rayproject/ray:2.51.1-py311-gpu
+              lifecycle:
+                preStop:
+                  exec:
+                    command: ["/bin/sh", "-c", "ray stop"]
+              resources:
+                limits:
+                  cpu: "4"
+                  memory: "16Gi"
+                  nvidia.com/gpu: "1"
+                requests:
+                  cpu: "2"
+                  memory: "8Gi"
+                  nvidia.com/gpu: "1"
+              env:
+                - name: RAY_DISABLE_DOCKER_CPU_WARNING
+                  value: "1"
+          nodeSelector:
+            role: gpu
+          tolerations:
+            - key: nvidia.com/gpu
+              operator: Exists
+              effect: NoSchedule
